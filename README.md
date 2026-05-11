@@ -77,7 +77,7 @@ cargo run [file]
 
 Or otherwise:
 ```
-./path_to_file/qlang.exe [file]
+./path_to_binary/qlang.exe [file]
 ```
 
 
