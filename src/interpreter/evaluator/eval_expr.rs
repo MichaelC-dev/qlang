@@ -74,18 +74,21 @@ impl Evaluator {
                 return Ok(EvaluatorType::Bits(bits));
             },
 
+            // Pre: call_args is well-ordered
             ast::Expr::Call { callee, args: call_args } => {
                 // evaluate args to their literal values
-                let reduced_args: Result<Vec<EvaluatorType>, RuntimeError> = call_args.iter()
-                    .map(|expr| self.eval_expr(expr, args, table)).collect();
-                let reduced_args = reduced_args?;
-                let mut base10_args: Vec<usize> = Vec::new();
-                for e in &reduced_args {
-                    match e {
-                        EvaluatorType::Bits(b) => { base10_args.push(b.literal); },
+                let call_args: Result<Vec<EvaluatorType>, RuntimeError> = call_args.iter()
+                    .map(|expr| self.eval_expr(expr, args, table))
+                    .collect();
+                let call_args = call_args?;
+                
+                let mut reduced_args: Vec<Bits> = Vec::new();
+                for b in call_args {
+                    match b {
+                        EvaluatorType::Bits(b) => { reduced_args.push(b); },
                         _ => { return Err(RuntimeError::TypeMismatch); }
                     }
-                }
+                } 
 
                 // ensure that func_name points to an actual function
                 let func_name = match &**callee { // ?
@@ -100,12 +103,22 @@ impl Evaluator {
 
                 // check that arity matches between the two
                 let expected: usize = func.input.len();
-                let actual: usize = call_args.len();
+                let actual: usize = reduced_args.len();
                 if expected != actual {
                     return Err(RuntimeError::IncorrectArgs(expected, actual));
                 }
 
+                // ensure that the size of each call_arg corresponds to what was passed
+                for i in 0..func.input.len() {
+                    if func.input[i] != reduced_args[i].length {
+                        return Err(RuntimeError::TypeMismatch);
+                    }
+                }
+
                 // execute
+                let base10_args: Vec<usize> = reduced_args.iter()
+                    .map(|b| b.literal)
+                    .collect();
                 let result = (func.func)(base10_args)?;
                 let bits: Bits = Bits { length: func.output, literal: result };
                 return Ok(EvaluatorType::Bits(bits));
