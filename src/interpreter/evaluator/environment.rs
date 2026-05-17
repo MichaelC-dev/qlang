@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use qlang::engine::{black_box::Lambda, operator::Operator, qubit_register::QubitRegister};
-
+use qlang::engine::{operator::Operator, qubit_register::QubitRegister};
+use crate::interpreter::parser::ast_types as ast;
 use crate::interpreter::evaluator::runtime_error::RuntimeError;
 
 #[derive(Clone)]
@@ -10,7 +10,26 @@ pub enum EvaluatorType {
     Oracle(Oracle),
     Circuit(Circuit)
 }
-pub type Environment = HashMap<String, EvaluatorType>;
+
+#[derive(Clone)]
+pub struct Environment {
+    pub working_env: HashMap<String, EvaluatorType>,
+    pub parent: Option<Box<Environment>>
+}
+
+impl Environment {
+    pub fn resolve(&self, name: &String) -> Option<EvaluatorType> {
+        match self.working_env.get(name) {
+            Some(t) => { return Some(t.clone()); },
+            None => { /* no-op */}
+        };
+        return match &self.parent {
+            Some(e) => { e.resolve(name) },
+            None => None
+        };
+    }
+}
+
 
 // ----- BITS DEFINITION -----
 #[derive(Debug, Clone, Copy)]
@@ -20,57 +39,21 @@ pub struct Bits {
 }
 
 // ----- FUNCTION DEFINITION -----
+#[derive(Debug, Clone)]
 pub struct Function {
-    /// the cardinality of each `bits` argument.
-    /// 
-    /// For example, if a function was defined with the
-    /// signature `f(x: bits[2], y: bits[4])`, then `input`
-    /// will be `vec![2, 4]`.
-    /// 
-    /// PRE `{∀x ∈ self.input | x > 0}`
-    pub input: Vec<usize>,
-
-    /// The number of bits returned by the function.
-    /// 
-    /// PRE: `output > 0`
-    pub output: usize,
-
-    pub func: Lambda
-}
-
-impl Clone for Function {
-    fn clone(&self) -> Self {
-        Function {
-            input: self.input.clone(),
-            output: self.output,
-            func: self.func.clone(),
-        }
-    }
+    /// the identifier for each argument.
+    pub input: Vec<String>,
+    pub func: ast::Expr
 }
 
 // ----- ORACLE DEFINITION -----
+#[derive(Debug, Clone)]
 pub struct Oracle {
     /// the cardinality of each `qubits` argument.
     /// 
     /// PRE: `(input.fst > 0) && (input.snd > 0)`
     pub input: (usize, usize),
-
-    /// PRE:
-    /// 
-    /// - `loads.input.len() == 1`,
-    /// 
-    /// - `loads.input[0] == self.input.fst`,
-    /// 
-    /// - `loads.output == self.input.snd`
     pub loads: Function
-}
-impl Clone for Oracle {
-    fn clone(&self) -> Self {
-        Oracle {
-            input: self.input,
-            loads: self.loads.clone(),
-        }
-    }
 }
 
 // ----- CIRCUIT DEFINITION -----
@@ -88,7 +71,7 @@ impl Circuit {
     /// 
     /// enabling `verbose` will print the final distribution to `stdout`.
     pub fn execute(&self, verbose: bool) -> Result<Vec<usize>, RuntimeError> {
-        let mut register: QubitRegister = QubitRegister::new_from_pattern(&self.init)?;
+        let mut register: QubitRegister = QubitRegister::from_pattern(&self.init)?;
         let mut measurement: Vec<usize> = Vec::new();
         for op in &self.ops {
             measurement = register.apply(op)?;

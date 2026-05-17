@@ -6,7 +6,7 @@ use crate::interpreter::parser::ast_types as ast;
 impl Evaluator {
     pub fn eval_method_call(&mut self, call: &ast::MethodCall) -> Result<(), RuntimeError> {
         let circuit_name = &call.name;
-        let c: Circuit = match self.environment.get(circuit_name) {
+        let c: Circuit = match self.environment.working_env.get(circuit_name) {
             Some(EvaluatorType::Circuit(c)) => c.clone(),
             Some(_) => { return Err(RuntimeError::TypeMismatch); }
             None => { return Err(RuntimeError::VarNotFound(circuit_name.clone())); }

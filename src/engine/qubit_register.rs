@@ -50,7 +50,7 @@ impl QubitRegister {
     /// - `pattern.len() <= MAX_REGISTER_SIZE`
     /// 
     /// - all characters in `pattern` belong to the aforementioned alphabet. 
-    pub fn new_from_pattern(pattern: &String) -> Result<Self, RegisterError> {
+    pub fn from_pattern(pattern: &String) -> Result<Self, RegisterError> {
         // GUARDS
         if pattern.len() == 0 { return Err(RegisterError::EmptyRegister); }
         if pattern.len() > MAX_REGISTER_SIZE {

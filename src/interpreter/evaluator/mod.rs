@@ -5,7 +5,6 @@ mod eval_method;
 mod environment;
 
 use std::collections::HashMap;
-use qlang::engine::black_box::Lambda;
 use crate::interpreter::evaluator::runtime_error::RuntimeError;
 use crate::interpreter::evaluator::environment::{Environment, EvaluatorType,};
 use crate::interpreter::evaluator::environment::{Bits, Function, Oracle}; 
@@ -13,7 +12,6 @@ use crate::interpreter::parser::ast_types as ast;
 
 
 pub struct Evaluator {
-    program: ast::Program,
     environment: Environment
 }
 
@@ -24,44 +22,29 @@ impl Evaluator {
     /// `self.environment`.
     fn eval_assignment(&mut self, bits: &ast::Assignment) -> Result<(), RuntimeError> {
         let var_name: String = bits.name.clone();
-        let literal: Bits = match self.eval_expr(&bits.value, None, None)? {
+        let literal: Bits = match self.eval_expr(&bits.value)? {
             EvaluatorType::Bits(b) => b,
             _ => { return Err(RuntimeError::TypeMismatch); }
         };
-        self.environment.insert(var_name, EvaluatorType::Bits(literal));
+        let typed: EvaluatorType = EvaluatorType::Bits(literal);
+        self.environment.working_env.insert(var_name, typed);
         return Ok(()); 
     }
 
 
     fn eval_function_decl(&mut self, decl: &ast::FunctionDecl) -> Result<(), RuntimeError> {
         let func_name: String = decl.name.clone();
-        let output: usize = match decl.return_type {
-            ast::Type::Bits(n) => n,
-            _ => { return Err(RuntimeError::TypeMismatch); }
-        };
 
-        // while evaluating the function body expression, if we ever encounter an
-        // identifier that cannot be resolved, (i.e., we catch RuntimeError::VarNotFound),
-        // then we consult the symbol table to ensure that its a function parameter.
-        // If we can't find the identifier in the symbol table, then we can be confident that
-        // the variable is not found.
-        let mut symbol_table: Vec<(String, usize)> = Vec::new();
-        for symbol in &decl.params {
-            let size: usize = match symbol.ty {
-                ast::Type::Bits(n) => n,
-                _ => { return Err(RuntimeError::TypeMismatch); }
-            };
-            let name: String = symbol.name.clone();
-            symbol_table.push((name, size));
-        }
-        let input: Vec<usize> = symbol_table.iter()
-            .map(|x| x.1)
+        let symbol_table: Vec<String> = decl.params.iter().
+            map(|p| p.name.to_string())
             .collect();
 
-        let func: Lambda = self.build_closure_from_expr(&decl.body, &symbol_table);   
-
-        let func_literal: Function = Function { input, output, func };
-        self.environment.insert(func_name, EvaluatorType::Function(func_literal));
+        let func_literal: Function = Function {
+            input: symbol_table,
+            func: decl.body.clone()
+        };
+        let typed: EvaluatorType = EvaluatorType::Function(func_literal);
+        self.environment.working_env.insert(func_name, typed);
         return Ok(());
     }
 
@@ -71,21 +54,19 @@ impl Evaluator {
         let oracle_loads: String = decl.loads.clone();
 
         // ensure that `oracle_loads` exists in the environment
-        let f = match self.environment.get(&oracle_loads) {
+        let f = match self.environment.working_env.get(&oracle_loads) {
             None => { return Err(RuntimeError::VarNotFound(oracle_loads)) },
             Some(EvaluatorType::Function(f)) => f,
             Some(_) => { return Err(RuntimeError::TypeMismatch) }
         };
 
-        // ensure that `f :: bits[x] -> bits[y]` matches the
-        // cardinality for `|x, y>`
+        // this should never error, as the type-
+        // checker should catch these errors
         let (in_size, out_size) = sanitize_oracle(decl)?;
-        if f.input[0] != in_size { return Err(RuntimeError::OracleConstructionFailed); }
-        if f.output != out_size { return Err(RuntimeError::OracleConstructionFailed); }
 
         // oracle is safe to construct
         let oracle: Oracle = Oracle { input: (in_size, out_size), loads: f.clone() };
-        self.environment.insert(oracle_name, EvaluatorType::Oracle(oracle));
+        self.environment.working_env.insert(oracle_name, EvaluatorType::Oracle(oracle));
         return Ok(());
     }
 
@@ -106,14 +87,17 @@ impl Evaluator {
 
 /// PUBLIC API METHODS
 impl Evaluator {
-    pub fn new(program: ast::Program) -> Self {
-        let environment: Environment = HashMap::new();
-        Self { program, environment }
+    pub fn new() -> Self {
+        let environment: Environment = Environment {
+            working_env: HashMap::new(),
+            parent: None
+        };
+        Self { environment }
     }
 
-    pub fn eval(&mut self) -> Result<(), RuntimeError> {
-        for _ in 0..self.program.len() {
-            let stmt: ast::Statement = self.program.remove(0);
+    pub fn eval(&mut self, program: &mut ast::Program) -> Result<(), RuntimeError> {
+        for _ in 0..program.len() {
+            let stmt: ast::Statement = program.remove(0);
             self.eval_statement(stmt)?;
         }
         return Ok(());

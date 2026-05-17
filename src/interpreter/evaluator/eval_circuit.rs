@@ -1,11 +1,14 @@
-use qlang::engine::black_box::BlackBox;
+use qlang::engine::black_box::{BlackBox, Lambda};
 use qlang::engine::gate::Gate;
 use qlang::engine::operator::Operator;
+use qlang::engine::register_error::RegisterError;
 
 use crate::interpreter::evaluator::Evaluator;
-use crate::interpreter::evaluator::environment::{Circuit, EvaluatorType};
+use crate::interpreter::evaluator::environment::{Circuit, EvaluatorType, Environment, Bits};
 use crate::interpreter::evaluator::runtime_error::RuntimeError;
 use crate::interpreter::parser::ast_types as ast;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 // Although there is a case to use a HashMap over a Vec here,
 // Vec's make it easy to preserve the ordering of variables. The
@@ -77,7 +80,7 @@ impl Evaluator {
         let cirucit_name: String = decl.name.clone();
         let circuit: Circuit = Circuit { init: register_str, ops };
 
-        self.environment.insert(cirucit_name, EvaluatorType::Circuit(circuit));
+        self.environment.working_env.insert(cirucit_name, EvaluatorType::Circuit(circuit));
 
         return Ok(());
     }
@@ -87,11 +90,11 @@ impl Evaluator {
         // check to see that the gate exists as an oracle in the environment
         // - Note that this means that we're allowing users to override existing
         // gates ("H", "CNOT", etc...) with their own oracles.
-        match self.environment.get(gate_name) {
+        match self.environment.working_env.get(gate_name) {
             Some(EvaluatorType::Oracle(o)) => {
                 let (x, y): (usize, usize) = (o.input.0, o.input.1);
-                let func = &o.loads.func;
-                let bb: BlackBox = BlackBox::new(func.clone(), x, y);
+                let lambda: Lambda = self.function_to_lambda(&o.loads.func, &o.loads.input, &[x]);
+                let bb: BlackBox = BlackBox::new(lambda, x, y);
                 return Ok(Gate::BlackBox(bb));
             },
             Some(_) => { return Err(RuntimeError::TypeMismatch); }
@@ -143,4 +146,52 @@ fn get_index(table: &CircuitLookup, identifer: &String, plus: usize) -> Result<u
         }
     }
     return Err(RuntimeError::VarNotFound(identifer.clone()));
+}
+
+
+impl Evaluator {
+    fn function_to_lambda(
+        &self,
+        func: &ast::Expr,
+        params: &[String],
+        param_bit_lengths: &[usize]
+    ) -> Lambda {
+        let func = func.clone();
+        let params: Vec<String> = params.to_vec();
+        let param_bit_lengths: Vec<usize> = param_bit_lengths.to_vec();
+        let parent_env: Environment = self.environment.clone();
+
+        Arc::new(move |args: Vec<usize>| -> Result<usize, RegisterError> {
+            if args.len() != params.len() {
+                return Err(RegisterError::RunTimeFailure(Some(format!(
+                    "expected {} arguments, got {}",
+                    params.len(),
+                    args.len()
+                ))));
+            }
+
+            let mut lambda_env: Environment = Environment {
+                working_env: HashMap::new(),
+                parent: Some(Box::new(parent_env.clone()))
+            };
+
+            for i in 0..params.len() {
+                let bits: Bits = Bits {
+                    literal: args[i],
+                    length: param_bit_lengths[i]
+                };
+                lambda_env.working_env.insert(params[i].clone(), EvaluatorType::Bits(bits));
+            }
+
+            let mut lambda_eval: Evaluator = Evaluator::new();
+            lambda_eval.environment = lambda_env;
+            match lambda_eval.eval_expr(&func) {
+                Ok(EvaluatorType::Bits(bits)) => Ok(bits.literal),
+                Ok(_) => Err(RegisterError::RunTimeFailure(Some(
+                    "function did not return a bits value".to_string()
+                ))),
+                Err(err) => Err(RegisterError::RunTimeFailure(Some(err.to_string())))
+            }
+        })
+    }
 }

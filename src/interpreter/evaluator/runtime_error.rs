@@ -28,7 +28,9 @@ impl fmt::Display for RuntimeError {
                 write!(f, "expected '{}' args in function, but got '{}'", expected, actual)
             },
 
-            Self::OracleConstructionFailed => write!(f, "ensure that `f :: x -> y` implies oracle has type |x, y>, such that x >= y."),
+            Self::OracleConstructionFailed => {
+                write!(f, "ensure that `f :: x -> y` implies oracle has type |x, y>, such that x >= y.")
+            },
 
             Self::BackendError(err) => {
                 write!(f, "Engine failed while performing circuit computation: {}", err)

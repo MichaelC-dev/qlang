@@ -78,7 +78,7 @@ cargo run [file]
 
 Or otherwise:
 ```
-./path_to_binary/qlang.exe [file]
+./path_to_file/qlang.exe [file]
 ```
 
 
@@ -86,12 +86,10 @@ Or otherwise:
 The current release is functional, but still experimental, and several improvements and features have been planned before the language can be considered stable.
 
 Architectural improvements include:
-- Refactoring evaluation architecture:
-  - The language's evaluation of expressions and circuits can be tightened, and require a more modular separation of concerns.
-  - With the introduction of static type checking, the evaluator can be adjusted to focus on a more narrow concern.
-- Improving Error messaging.
-- Implementing an automated and extensible testing suite (that is compatible with `cargo test`)
+- Refactoring evaluation architecture → The language's evaluation of circuits can be tightened.
 - Updating unitary oracles → oracles are currently constrained, in that they must be applied to an entire `QubitRegister`'s domain.
+- Implementing an automated and extensible testing suite (that is compatible with `cargo test`).
+- Improving Error messaging.
 
 Planned features include:
 - Implementing the `SWAP`, `CZ`, `CSWAP` and Toffoli (`CCNOT`) gates.

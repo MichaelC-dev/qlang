@@ -21,7 +21,7 @@ impl Interpreter {
         let mut parser: Parser = Parser::new(lexer.tokens);
         let result = parser.parse();
         if let Err(e) = result { panic!("Parsing Error: {}", e); }
-        let result = result.unwrap();
+        let mut result = result.unwrap();
 
         let mut tc: TypeChecker = TypeChecker::new();
         match tc.ensures(&result) {
@@ -29,8 +29,8 @@ impl Interpreter {
             Err(e) => { panic!("Typing Error: {}", e); }
         }
 
-        let mut evaluator: Evaluator = Evaluator::new(result);
-        let result = evaluator.eval();
-        if let Err(e) = result { panic!("Runtime Error: {}", e); }
+        let mut evaluator: Evaluator = Evaluator::new();
+        let execution = evaluator.eval(&mut result);
+        if let Err(e) = execution { panic!("Runtime Error: {}", e); }
     }
 }
