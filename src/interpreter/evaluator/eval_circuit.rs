@@ -101,22 +101,9 @@ impl Evaluator {
             None => { } // check default gate set
         };
 
-        match gate_name.as_str() {
-            "H" => Ok(Gate::Hadamard),
-            "X" => Ok(Gate::RotateX),
-            "Y" => Ok(Gate::RotateY),
-            "Z" => Ok(Gate::RotateZ),
-            "T" => Ok(Gate::ShiftT),
-            "S" => Ok(Gate::ShiftS),
-            "CNOT" => Ok(Gate::CNot),
-            "SWAP" => Ok(Gate::Swap),
-            "CZ" => Ok(Gate::CZ),
-            "CCNOT" => Ok(Gate::Toffoli),
-            "CSWAP" => Ok(Gate::CSwap),
-            // we pass `m_arity` to this function because
-            // measure's arity is not pre-determined.
-            "measure" => Ok(Gate::Measure(m_arity)),
-            _ => Err(RuntimeError::VarNotFound(gate_name.clone()))
+        match Gate::from_string(gate_name, m_arity) {
+            Some(g) => Ok(g),
+            None => Err(RuntimeError::VarNotFound(gate_name.clone()))
         }
     }
 }

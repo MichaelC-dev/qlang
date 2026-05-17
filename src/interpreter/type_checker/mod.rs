@@ -197,10 +197,10 @@ impl TypeChecker {
         
         // check if `gate_name` exists in the default gate set
         let name: String = gate_name.to_string();
-        return match Gate::arity_from_string(gate_name, m_arity) {
+        return match Gate::from_string(gate_name, m_arity).map(|g| g.arity()) {
             Some(n) => Ok(n),
             None => Err(TypeError::UnresolvedIdentifier(name))
-        }
+        };
     }
 }
 
