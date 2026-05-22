@@ -80,7 +80,7 @@ impl Operator {
             // binary operations
             Gate::CNot => operator_helpers::apply_cnot(&mut state.state, n, &self.targets),
             Gate::Swap => todo!(),
-            Gate::CZ => todo!(),
+            Gate::CZ => operator_helpers::apply_cz(&mut state.state, n, &self.targets),
             // ternary operators
             Gate::Toffoli => todo!(),
             Gate::CSwap => todo!(),

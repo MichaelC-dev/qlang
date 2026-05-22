@@ -175,6 +175,41 @@ pub fn apply_cnot(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bo
     return true;
 }
 
+/// Applies the CZ (Controlled-Z) operator to a quantum state. `n` denotes the
+/// number of qubits in `state`, and `tgts` denotes the control and target qubits
+/// (such that `0` is the left-most qubit, and `n-1` is the right-most).
+///
+/// Applies a phase flip of -1 to the amplitude of any basis state where
+/// both the control and target qubits are |1>.
+///
+/// Pre:
+///
+/// - `tgts[0]` is the `control` qubit, and `tgts[1]` is the `target` qubit.
+///
+/// - `0 <= control < n` and `0 <= target < n`.
+///
+/// - `control != target`.
+///
+/// - `state.len() == 2**n`.
+pub fn apply_cz(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bool {
+    let (control, tgt) = (tgts.get(0), tgts.get(1));
+    if control.is_none() || tgt.is_none() { return false; }
+    let (control, tgt) = (*control.unwrap(), *tgt.unwrap());
+    if (control >= n) || (tgt >= n) { return false; }
+    if control == tgt { return false; }
+
+    let control_mask: usize = 1 << ((n - 1) - control);
+    let tgt_mask: usize = 1 << ((n - 1) - tgt);
+
+    for i in 0..state.len() {
+        if (i & control_mask) != 0 && (i & tgt_mask) != 0 {
+            state[i] = -state[i];
+        }
+    }
+
+    return true;
+}
+
 /// Given some black-box `f`, apply the unitary `U_f` to the entire `state`.
 /// Specifically, if we say that `x` denotes the first `n-1` qubits in state, and `y`
 /// denotes the last qubit in state, then this function will apply `|x,y> -> |x, y ^ f(x)>`
