@@ -79,11 +79,11 @@ impl Operator {
             Gate::ShiftT => operator_helpers::apply_t(&mut state.state, n, &self.targets),
             // binary operations
             Gate::CNot => operator_helpers::apply_cnot(&mut state.state, n, &self.targets),
-            Gate::Swap => todo!(),
+            Gate::Swap =>  operator_helpers::apply_swap(&mut state.state, n, &self.targets),
             Gate::CZ => operator_helpers::apply_cz(&mut state.state, n, &self.targets),
             // ternary operators
             Gate::Toffoli => operator_helpers::apply_toffoli(&mut state.state, n, &self.targets),
-            Gate::CSwap => todo!(),
+            Gate::CSwap =>  operator_helpers::apply_cswap(&mut state.state, n, &self.targets),
             // custom operations
             Gate::BlackBox(bb) => operator_helpers::apply_u_f(&mut state.state, n, bb)?,
             _ => unreachable!() // since we handled `Measure` above
