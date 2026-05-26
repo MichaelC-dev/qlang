@@ -1,5 +1,6 @@
 #[derive(Clone, PartialEq)]
 pub enum LanguageType {
+    Const(usize),
     Bits(usize), // `usize` denotes here the length of the bitstring
     Function(FunctionType),
     Oracle(usize, usize),
@@ -22,6 +23,7 @@ pub struct FunctionType {
 impl LanguageType {
     pub fn label(&self) -> String {
         match self {
+            LanguageType::Const(_) => String::from("const"),
             LanguageType::Bits(_) => String::from("bits"),
             LanguageType::Function(_) => String::from("function"),
             LanguageType::Oracle(_, _) => String::from("oracle"),

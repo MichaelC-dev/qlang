@@ -38,7 +38,8 @@ impl TypeChecker {
                         return Err(TypeError::Expected("circuit", l.label()));
                     },
                     None => {
-                        return Err(TypeError::UnresolvedIdentifier(name))
+                        println!("Branch 1");
+                        return Err(TypeError::UnresolvedIdentifier(name));
                     }
                 }
             }
@@ -50,10 +51,10 @@ impl TypeChecker {
         let bitstring_name: &String = &assignment.name;
         let bitstring_value: LanguageType = self.resolve_expr(&assignment.value)?;
         match bitstring_value {
-            LanguageType::Bits(_) => {
+            LanguageType::Bits(_) | LanguageType::Const(_) => {
                 self.identifier_types.insert(bitstring_name.clone(), bitstring_value);
             },
-            _ => { return Err(TypeError::Expected("bits", bitstring_value.label())); }
+            _ => { return Err(TypeError::Expected("bits/ const", bitstring_value.label())); }
         };
         return  Ok(());
     }
@@ -71,8 +72,9 @@ impl TypeChecker {
         let mut table: Vec<(String, LanguageType)> = Vec::new();
         for param in &func.params {
             let var_name: String = param.name.to_string();
-            let var_value: LanguageType = match param.ty {
+            let var_value: LanguageType = match &param.ty {
                 ast::Type::Bits(n) => {
+                    let n: usize = self.expect_const(&n)?;
                     indices.push(n);
                     LanguageType::Bits(n)
                 },
@@ -83,10 +85,10 @@ impl TypeChecker {
 
         // ensure that the output has a `bits` format
         let output_bits: usize;
-        let output: LanguageType = match func.return_type {
+        let output: LanguageType = match &func.return_type {
             ast::Type::Bits(n) => {
-                output_bits = n;
-                LanguageType::Bits(n)
+                output_bits = self.expect_const(&n)?;
+                LanguageType::Bits(output_bits)
             },
             _ => { return Err(TypeError::FunctionReturnWrongType(func_name)); }
         };
@@ -115,15 +117,19 @@ impl TypeChecker {
         let loaded: &LanguageType = match self.identifier_types.get(&oracle.loads) {
             Some(f) => f,
             None => {
+                println!("Branch 2");
                 return Err(TypeError::UnresolvedIdentifier(oracle.loads.to_string()));
             }
         };
         let f_type: &FunctionType = match loaded {
             LanguageType::Function(f) => f,
-            _ => { return Err(TypeError::UnresolvedIdentifier(loaded.label())); }
+            _ => {
+                println!("Branch 3");
+                return Err(TypeError::UnresolvedIdentifier(loaded.label()));
+            }
         };
 
-        let sanitised_oracle: LanguageType = sanitise_oracle(oracle, f_type)?;
+        let sanitised_oracle: LanguageType = self.sanitise_oracle(oracle, f_type)?;
         self.identifier_types.insert(oracle.name.to_string(), sanitised_oracle);
         return Ok(());
     }
@@ -132,7 +138,12 @@ impl TypeChecker {
     fn ensure_circuit_decl(&mut self, circuit: &ast::CircuitDecl) -> Result<(), TypeError> {
         let mut table: HashMap<String, usize> = HashMap::new();
         for qbit in &circuit.registers {
-            table.insert(qbit.name.to_string(), qbit.init.len());
+            let m: usize = match &qbit.multiplies {
+                Some(expr) => self.expect_const(&expr)?,
+                None => 1
+            };
+            let symbol: String = qbit.name.to_string();
+            table.insert(symbol, qbit.init.len() * m);
         }
 
         for instruction in &circuit.instructions {
@@ -199,8 +210,68 @@ impl TypeChecker {
         let name: String = gate_name.to_string();
         return match Gate::from_string(gate_name, m_arity).map(|g| g.arity()) {
             Some(n) => Ok(n),
-            None => Err(TypeError::UnresolvedIdentifier(name))
+            None => {
+                println!("Branch 4");
+                return Err(TypeError::UnresolvedIdentifier(name));
+            }
         };
+    }
+
+    fn expect_const(&self, expr: &ast::Expr) -> Result<usize, TypeError>{
+        let result: LanguageType = self.resolve_expr(expr)?;
+        match result {
+            LanguageType::Const(n) => Ok(n),
+            _ => Err(TypeError::Expected("const", result.label()))
+        }
+    }
+}
+
+
+impl TypeChecker {
+    /// Given an oracle declaration and a function in the type
+    /// pre-environment, verify that oracle is valid, and return
+    /// a sanitised oracle.
+    fn sanitise_oracle(
+        &self,
+        oracle: &ast::OracleDecl,
+        loads: &FunctionType
+    ) -> Result<LanguageType, TypeError> {
+        // ensure that oracle and function have the correct lengths
+        if oracle.params.len() != 2 || loads.input.len() != 1 {
+            return Err(TypeError::Todo);
+        }
+
+        // ensure that loads.in[0], loads.out oracle[0],
+        // and oracle[1] are (bits, bits, qbits, qbits)
+        let input_bits: usize = loads.input[0];
+        let output_bits: usize = loads.output;
+
+        let (inp, out) = (&oracle.params[0].ty, &oracle.params[1].ty);
+        let oracle_input_qubits: usize = self.sanitise_oracle_pt(inp)?;
+        let oracle_output_qubits: usize = self.sanitise_oracle_pt(out)?;
+
+        // ensure that loads.in[0] >= loads.out
+        if input_bits < output_bits {
+            return Err(TypeError::Todo);
+        }
+
+        // ensure that loads.in[0] == oracle[0],
+        // and that loads.out == oracle[1]
+        if (input_bits != oracle_input_qubits) || (output_bits != oracle_output_qubits) {
+            return Err(TypeError::Todo);
+        }
+
+        // return prepared oracle
+        Ok(LanguageType::Oracle(oracle_input_qubits, oracle_output_qubits))
+    }
+
+
+    fn sanitise_oracle_pt(&self, qtype: &ast::Type) -> Result<usize, TypeError> {
+        let extracted: &ast::Expr = match qtype {
+            ast::Type::Qubits(n) => n,
+            _ => { return Err(TypeError::Todo); }
+        };
+        return self.expect_const(extracted);
     }
 }
 
@@ -217,6 +288,7 @@ fn count_qubits(
         let size = match env.get(&arg.name) {
             Some(val) => val,
             None => {
+                println!("Branch 5, {:?}", env);
                 let name = arg.name.to_string();
                 return Err(TypeError::UnresolvedIdentifier(name))
             }
@@ -229,46 +301,4 @@ fn count_qubits(
     }
 
     return Ok(acc);
-}
-
-
-/// Given an oracle declaration and a function in the type
-/// pre-environment, verify that oracle is valid, and return
-/// a sanitised oracle.
-fn sanitise_oracle(
-    oracle: &ast::OracleDecl,
-    loads: &FunctionType
-) -> Result<LanguageType, TypeError> {
-    // ensure that oracle and function have the correct lengths
-    if oracle.params.len() != 2 || loads.input.len() != 1 {
-        return Err(TypeError::Todo);
-    }
-
-    // ensure that loads.in[0], loads.out oracle[0],
-    // and oracle[1] are (bits, bits, qbits, qbits)
-    let input_bits: usize = loads.input[0];
-    let output_bits: usize = loads.output;
-
-    let oracle_input_qubits: usize = match oracle.params[0].ty {
-        ast::Type::Qubits(n) => n,
-        _ => { return Err(TypeError::Todo); }
-    };
-    let oracle_output_qubits: usize = match oracle.params[1].ty {
-        ast::Type::Qubits(n) => n,
-        _ => { return Err(TypeError::Todo); }
-    };
-
-    // ensure that loads.in[0] >= loads.out
-    if input_bits < output_bits {
-        return Err(TypeError::Todo);
-    }
-
-    // ensure that loads.in[0] == oracle[0],
-    // and that loads.out == oracle[1]
-    if (input_bits != oracle_input_qubits) || (output_bits != oracle_output_qubits) {
-        return Err(TypeError::Todo);
-    }
-
-    // return prepared oracle
-    Ok(LanguageType::Oracle(oracle_input_qubits, oracle_output_qubits))
 }

@@ -8,6 +8,7 @@ pub enum TokenType {
 
     /* --- Keywords --- */
     Bits,
+    Const,
     Qubits,
     Function,
     Oracle,

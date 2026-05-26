@@ -28,8 +28,13 @@ impl Evaluator {
         // we would want to construct the register "00++" (we assume order);
         // but we also want to know that `x` begins at qubit 0, and `y` begins at 2.
         for reg in decl.registers.iter() {
-            register_str += &reg.init;
-            lookup.push((reg.name.clone(), reg.init.len()));
+            let m: usize = match &reg.multiplies {
+                Some(n) => self.expect_const(&n)?,
+                None => 1
+            };
+            let inits: String = reg.init.repeat(m);
+            register_str += &inits;
+            lookup.push((reg.name.clone(), inits.len()));
         }
 
         // build engine ops

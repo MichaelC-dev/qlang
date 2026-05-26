@@ -19,6 +19,12 @@ impl Evaluator {
                 return Ok(EvaluatorType::Bits(bits));
             },
 
+            ast::Expr::Const(num) => {
+                return match num.parse() {
+                    Ok(n) => Ok(EvaluatorType::Const(n)),
+                    Err(_) => Err(RuntimeError::Fatal)
+                };
+            }
 
             ast::Expr::Grouping(boxed_expr) => {
                 return self.eval_expr(boxed_expr);

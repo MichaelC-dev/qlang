@@ -107,6 +107,10 @@ impl Parser {
                 let result = self.parse_assignment()?;
                 return Ok(ast::Statement::Assignment(result));
             },
+            TokenType::Const => {
+                let result: ast::Assignment = self.parse_const()?;
+                return Ok(ast::Statement::Assignment(result));
+            },
             TokenType::Function => {
                 let result: ast::FunctionDecl = self.parse_function()?;
                 return Ok(ast::Statement::Function(result));
@@ -145,6 +149,21 @@ impl Parser {
         return Ok(assignment);
     }
 
+
+    fn parse_const(&mut self) -> Result<ast::Assignment, ParserError> {
+        self.expect(TokenType::Const)?;
+        let const_name: String = self.expect(TokenType::Identifier)?;
+        self.expect(TokenType::Equals)?;
+        let value: ast::Expr = self.parse_expr()?;
+        self.expect(TokenType::Semicolon)?;
+
+        let assignment: ast::Assignment = ast::Assignment {
+            name: const_name,
+            value: value
+        };
+        return Ok(assignment)
+    }
+
     fn parse_method_call(&mut self) -> Result<ast::MethodCall, ParserError> {
         let circuit_name: String = self.expect(TokenType::Identifier)?;
         self.expect(TokenType::Period)?; 
@@ -168,9 +187,8 @@ impl Parser {
         while self.token_matches(TokenType::Identifier) {
             let name: String = self.expect(TokenType::Identifier)?;
             self.expect(TokenType::Equals)?;
-            let qty: String = self.expect(TokenType::IntLiteral)?;
-            let qty: usize = Parser::convert_to_usize(qty)?;
 
+            let qty: ast::Expr = self.parse_expr()?;
             let arg: ast::MethodArg = ast::MethodArg { name, value: qty };
             args.push(arg);
 

@@ -206,6 +206,7 @@ impl Lexer {
         let pattern: String = self.source[self.start_lexeme..self.ptr].iter().collect();
         let token_type = match pattern.as_str() {
             "bits" => TokenType::Bits,
+            "const" => TokenType::Const,
             "qubits" => TokenType::Qubits,
             "function" => TokenType::Function,
             "oracle" => TokenType::Oracle,

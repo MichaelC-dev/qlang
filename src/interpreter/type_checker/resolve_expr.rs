@@ -18,6 +18,16 @@ impl TypeChecker {
                 return Ok(LanguageType::Bits(trimmed.len()));
             },
 
+            ast::Expr::Const(num) => {
+                let n: usize = match num.parse() {
+                    Ok(n) => n,
+                    Err(_) => {
+                        return Err(TypeError::FailedConstParse(num.to_string()));
+                    }
+                };
+                return Ok(LanguageType::Const(n));
+            }
+
             ast::Expr::Identifier(name) => {
                 // attempt to resolve `name` in the pre-environment
                 match self.identifier_types.get(name) {

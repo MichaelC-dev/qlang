@@ -3,6 +3,7 @@ use std::fmt;
 pub enum TypeError {
     Expected(&'static str, String),
     FailedBitsParse(String),
+    FailedConstParse(String),
     BinaryOpFailed(usize, usize),
     UnresolvedIdentifier(String),
     InvalidArgs,
@@ -22,6 +23,10 @@ impl fmt::Display for TypeError {
 
             Self::FailedBitsParse(b) => {
                 write!(f, "Failed to parse string '{}' into a bitstring", b)
+            },
+
+            Self::FailedConstParse(num) => {
+                write!(f, "Failed to parse string '{}' into a const", num)
             },
 
             Self::BinaryOpFailed(a, b) => {

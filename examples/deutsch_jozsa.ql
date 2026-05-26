@@ -1,12 +1,14 @@
-bits a = 0b1101;
+const SIZE = 4;
+bits s = 0b1101;
 
-function f_balanced(x: bits[4]) -> bits[1] { x * a }
-function f_constant(x: bits[4]) -> bits[1] { 0b1 }
-oracle U_f(x: qubits[4], y: qubits[1]) loads f_balanced;
+function f_balanced(x: bits[SIZE]) -> bits[1] { x * s }
+function f_constant(x: bits[SIZE]) -> bits[1] { 0b1 }
+
+oracle U_f(x: qubits[SIZE], y: qubits[1]) loads f_balanced;
 
 circuit deutsch_jozsa {
     register:
-        qubits x = "0000";
+        qubits x = "0" * SIZE;
         qubits y = "1";
     
     apply:

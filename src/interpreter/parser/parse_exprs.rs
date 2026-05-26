@@ -96,26 +96,23 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<ast::Expr, ParserError> {
         let curr_lexeme: String = self.curr_lexeme();
-        match self.tokens[self.current].token_type {
-            TokenType::Identifier => {
-                let curr: String = self.curr_lexeme();
-                self.advance();
-                Ok(ast::Expr::Identifier(curr))
-            },
-            TokenType::BitsLiteral => {
-                let curr: String = self.curr_lexeme();
-                self.advance();
-                Ok(ast::Expr::BitsLiteral(curr))
-            },
-            TokenType::LParen => {
-                self.advance();
-                return self.parse_grouping();
-            },
-            _ => Err(ParserError::UnexpectedToken(curr_lexeme))
-        }
+
+        let expr: ast::Expr = match self.tokens[self.current].token_type {
+            TokenType::Identifier =>  ast::Expr::Identifier(curr_lexeme),
+            TokenType::BitsLiteral => ast::Expr::BitsLiteral(curr_lexeme),
+            TokenType::IntLiteral => ast::Expr::Const(curr_lexeme),
+            TokenType::LParen => { return self.parse_grouping(); },
+            _ => {
+                return Err(ParserError::UnexpectedToken(curr_lexeme));
+            }
+        };
+        self.advance();
+        return Ok(expr);
     }
 
+    
     fn parse_grouping(&mut self) -> Result<ast::Expr, ParserError> {
+        self.expect(TokenType::LParen)?;
         let expr: ast::Expr = self.parse_expr()?;
         self.expect(TokenType::RParen)?;
         return Ok(ast::Expr::Grouping(Box::new(expr)));

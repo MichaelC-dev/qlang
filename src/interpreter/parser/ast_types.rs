@@ -1,6 +1,6 @@
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Assignment(Assignment), // reserved for bits allocation
+    Assignment(Assignment), // reserved for bits/ const allocations
     Function(FunctionDecl),
     Oracle(OracleDecl),
     Circuit(CircuitDecl),
@@ -15,7 +15,7 @@ pub type Program = Vec<Statement>;
 #[derive(Debug, Clone)]
 pub struct Assignment {
     pub name: String, // Identifier
-    pub value: Expr,  // should only ever be BitsLiteral
+    pub value: Expr,  // can be BitsLiteral or Const
 }
 
 
@@ -30,7 +30,7 @@ pub struct MethodCall {
 #[derive(Debug, Clone)]
 pub struct MethodArg {
     pub name: String, // Identifier
-    pub value: usize
+    pub value: Expr
 }
 
 
@@ -50,8 +50,8 @@ pub struct Param {
 }
 #[derive(Debug, Clone)]
 pub enum Type {
-    Bits(usize),
-    Qubits(usize)
+    Bits(Expr),
+    Qubits(Expr)
 }
 
 
@@ -77,6 +77,7 @@ pub struct CircuitDecl {
 pub struct QubitDecl {
     pub name: String, // Identifier
     pub init: String, // "++", "00"
+    pub multiplies: Option<Expr>
 }
 #[derive(Debug, Clone)]
 pub struct CircuitInstr {
@@ -101,6 +102,7 @@ pub enum Applies {
 pub enum Expr {
     Identifier(String),
     BitsLiteral(String),
+    Const(String),
 
     Binary {
         op: BinOp,

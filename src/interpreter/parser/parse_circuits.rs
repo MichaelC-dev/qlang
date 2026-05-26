@@ -44,11 +44,23 @@ impl Parser {
         let var_name: String = self.expect(TokenType::Identifier)?;
         self.expect(TokenType::Equals)?;
         let value: String = self.expect(TokenType::StringLiteral)?;
+        
+        let mut multiplies: Option<ast::Expr> = None;
+        if self.token_matches(TokenType::Star) {
+            self.advance();
+            multiplies = Some(self.parse_expr()?);
+        }
         self.expect(TokenType::Semicolon)?;
 
         // strip `value` of quotations
-        let value = &value[1..value.len() - 1];
-        return Ok(ast::QubitDecl { name: var_name, init: value.to_string() });
+        let value: &str = &value[1..value.len() - 1];
+
+        let decl: ast::QubitDecl = ast::QubitDecl {
+            name: var_name,
+            init: value.to_string(),
+            multiplies: multiplies
+        };
+        return Ok(decl);
     }
 
 

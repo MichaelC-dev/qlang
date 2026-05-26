@@ -5,6 +5,7 @@ use crate::interpreter::evaluator::runtime_error::RuntimeError;
 
 #[derive(Clone)]
 pub enum EvaluatorType {
+    Const(usize),
     Bits(Bits),
     Function(Function),
     Oracle(Oracle),

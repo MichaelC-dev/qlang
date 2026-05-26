@@ -54,8 +54,7 @@ impl Parser {
         self.advance();
 
         self.expect(TokenType::LSqBracket)?;
-        let qty: String = self.expect(TokenType::IntLiteral)?;
-        let qty: usize = Parser::convert_to_usize(qty)?;
+        let qty:ast::Expr  = self.parse_expr()?;
         self.expect(TokenType::RSqBracket)?;
 
         return match curr_type {

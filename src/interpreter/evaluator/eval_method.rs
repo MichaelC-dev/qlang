@@ -14,7 +14,7 @@ impl Evaluator {
 
         match call.call.as_str() {
             "distribution" => {
-                let shots: usize = get_arg(&call.args, "shots").unwrap_or(1);
+                let shots: usize = self.get_arg(&call.args, "shots")?.unwrap_or(1);
                 println!("Executing circuit '{}' {} time/s.", circuit_name, shots);
                 for i in 0..shots {
                     print!("SHOT {} OF {}: ", i+1, shots);
@@ -24,7 +24,7 @@ impl Evaluator {
             },
 
             "measure" => {
-                let shots: usize = get_arg(&call.args, "shots").unwrap_or(1);
+                let shots: usize = self.get_arg(&call.args, "shots")?.unwrap_or(1);
                 println!("Measuring circuit '{}' {} time/s.", circuit_name, shots);
                 for i in 0..shots {
                     print!("SHOT {} OF {}: ", i+1, shots);
@@ -46,10 +46,18 @@ impl Evaluator {
     }
 }
 
+
 // ----- HELPERS -----
-fn get_arg(args: &Vec<ast::MethodArg>, arg_name: &str) -> Option<usize> {
-    for arg in args {
-        if arg.name.as_str() == arg_name { return Some(arg.value); }
+impl Evaluator {
+    fn get_arg(
+        &mut self,
+        args: &Vec<ast::MethodArg>,
+        arg_name: &str
+    )-> Result<Option<usize>, RuntimeError> {
+        for arg in args {
+            let n: usize = self.expect_const(&arg.value)?;
+            if arg.name.as_str() == arg_name { return Ok(Some(n)); }
+        }
+        return Ok(None);
     }
-    return None;
 }
