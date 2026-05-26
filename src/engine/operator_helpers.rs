@@ -175,6 +175,145 @@ pub fn apply_cnot(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bo
     return true;
 }
 
+
+/// Applies the SWAP operator to a quantum state. `n` denotes the number of
+/// qubits in `state`, and `tgts` denotes the two qubits to be swapped
+/// (such that `0` is the left-most qubit, and `n-1` is the right-most).
+///
+/// Swaps the amplitudes of all basis states that differ only in the two target qubits.
+///
+/// Pre:
+///
+/// - `tgts[0]` and `tgts[1]` are the qubits to swap.
+///
+/// - `0 <= tgts[0] < n` and `0 <= tgts[1] < n`.
+///
+/// - `tgts[0] != tgts[1]`.
+///
+/// - `state.len() == 2**n`.
+pub fn apply_swap(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bool {
+    let (tgt_1, tgt_2) = (tgts.get(0), tgts.get(1));
+    if tgt_1.is_none() || tgt_2.is_none() { return false; }
+    let (tgt_1, tgt_2) = (*tgt_1.unwrap(), *tgt_2.unwrap());
+    if (tgt_1 >= n) || (tgt_2 >= n) { return false; }
+    if tgt_1 == tgt_2 { return false; }
+
+    let tgt_1_mask: usize = 1 << ((n-1) - tgt_1);
+    let tgt_2_mask: usize = 1 << ((n-1) - tgt_2);
+
+    for i in 0..state.len() {
+        let new: usize = i ^ tgt_1_mask ^ tgt_2_mask;
+        if new > i { state.swap(i, new); }
+    }
+    return true;
+}
+
+
+/// Applies the CZ (Controlled-Z) operator to a quantum state. `n` denotes the
+/// number of qubits in `state`, and `tgts` denotes the control and target qubits
+/// (such that `0` is the left-most qubit, and `n-1` is the right-most).
+///
+/// Applies a phase flip of -1 to the amplitude of any basis state where
+/// both the control and target qubits are |1>.
+///
+/// Pre:
+///
+/// - `tgts[0]` is the `control` qubit, and `tgts[1]` is the `target` qubit.
+///
+/// - `0 <= control < n` and `0 <= target < n`.
+///
+/// - `control != target`.
+///
+/// - `state.len() == 2**n`.
+pub fn apply_cz(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bool {
+    let (control, tgt) = (tgts.get(0), tgts.get(1));
+    if control.is_none() || tgt.is_none() { return false; }
+    let (control, tgt) = (*control.unwrap(), *tgt.unwrap());
+    if (control >= n) || (tgt >= n) { return false; }
+    if control == tgt { return false; }
+
+    let control_mask: usize = 1 << ((n - 1) - control);
+    let tgt_mask: usize = 1 << ((n - 1) - tgt);
+
+    for i in 0..state.len() {
+        if (i & control_mask) != 0 && (i & tgt_mask) != 0 {
+            state[i] = -state[i];
+        }
+    }
+
+    return true;
+}
+
+/// Applies the Toffoli (CCNOT) operator to a quantum state. `n` denotes the
+/// number of qubits in `state`, and `tgts` denotes the two control qubits and
+/// target qubit (such that `0` is the left-most qubit, and `n-1` is the right-most).
+///
+/// Flips the target qubit if and only if both control qubits are |1>.
+///
+/// Pre:
+///
+/// - `tgts[0]` is `control_1`, `tgts[1]` is `control_2`, and `tgts[2]` is the `target` qubit.
+///
+/// - `0 <= control_1 < n`, `0 <= control_2 < n`, and `0 <= target < n`.
+///
+/// - `control_1`, `control_2`, and `target` are all distinct.
+///
+/// - `state.len() == 2**n`.
+pub fn apply_toffoli(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bool {
+    let (control_1, control_2, tgt) = (tgts.get(0), tgts.get(1), tgts.get(2));
+    if control_1.is_none() || control_2.is_none() || tgt.is_none() { return false; }
+    let (tgt, control_1, control_2) = (*tgt.unwrap(), *control_1.unwrap(), *control_2.unwrap());
+    if (tgt >= n) || (control_1 >= n) || (control_2 >= n) { return false; }
+    if tgt == control_1 || tgt == control_2 || control_1 == control_2 { return false; }
+
+    let tgt_mask: usize = 1 << ((n-1) - tgt);
+    let control_1_mask: usize = 1 << ((n-1) - control_1);
+    let control_2_mask: usize = 1 << ((n-1) - control_2);
+
+
+    for i in 0..state.len() {
+        if (i & control_1_mask) == 0 || (i & control_2_mask) == 0 { continue; }
+        let new: usize = i ^ tgt_mask;
+        if new > i { state.swap(i, new); }
+    }
+    return true;
+}
+
+
+/// Applies the CSWAP (Fredkin) operator to a quantum state. `n` denotes the
+/// number of qubits in `state`, and `tgts` denotes the control qubit and the
+/// two target qubits (such that `0` is the left-most qubit, and `n-1` is the right-most).
+///
+/// Swaps the two target qubits if and only if the control qubit is |1>.
+///
+/// Pre:
+///
+/// - `tgts[0]` is the control qubit, and `tgts[1..=2]` are the qubits to swap.
+///
+/// - `0 <= tgts[i] < n` for all `i`.
+///
+/// - `tgts[0]`, `tgts[1]`, and `tgts[2]` are all distinct.
+///
+/// - `state.len() == 2**n`.
+pub fn apply_cswap(state: &mut Vec<Complex64>, n: usize, tgts: &Vec<usize>) -> bool {
+    let (control, tgt_1, tgt_2) = (tgts.get(0), tgts.get(1), tgts.get(2));
+    if control.is_none() || tgt_1.is_none() || tgt_2.is_none() { return false; }
+    let (control, tgt_1, tgt_2) = (*control.unwrap(), *tgt_1.unwrap(), *tgt_2.unwrap());
+    if (control >= n) || (tgt_1 >= n) || (tgt_2 >= n) { return false; }
+    if tgt_1 == tgt_2 || tgt_1 == control || tgt_2 == control { return false; }
+
+    let control_mask: usize = 1 << ((n-1) - control);
+    let tgt_1_mask: usize = 1 << ((n-1) - tgt_1);
+    let tgt_2_mask: usize = 1 << ((n-1) - tgt_2);
+
+    for i in 0..state.len() {
+        if (i & control_mask) == 0 { continue; }
+        let new: usize = i ^ tgt_1_mask ^ tgt_2_mask;
+        if new > i { state.swap(i, new); }
+    }
+    return true;
+}
+
 /// Given some black-box `f`, apply the unitary `U_f` to the entire `state`.
 /// Specifically, if we say that `x` denotes the first `n-1` qubits in state, and `y`
 /// denotes the last qubit in state, then this function will apply `|x,y> -> |x, y ^ f(x)>`
