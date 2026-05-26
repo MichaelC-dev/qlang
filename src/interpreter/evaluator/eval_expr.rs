@@ -65,7 +65,8 @@ impl Evaluator {
                         for i in 0..left_res.length {
                             let l: usize = (left_res.literal >> i) & 1;
                             let r: usize = (right_res.literal >> i) & 1;
-                            result ^= l & r; // xorring is functionally equivalent to mod2 addition.
+                            // xorring is equivalent to mod2 addition.
+                            result ^= l & r;
                         }
                         result
                     }

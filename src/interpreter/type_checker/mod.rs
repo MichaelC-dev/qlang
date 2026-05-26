@@ -33,14 +33,9 @@ impl TypeChecker {
                 let name: String = m.name.to_string();
                 let lookup = self.identifier_types.get(&name);
                 match lookup {
-                    Some(LanguageType::Circuit) => { return Ok(()); },
-                    Some(l) => {
-                        return Err(TypeError::Expected("circuit", l.label()));
-                    },
-                    None => {
-                        println!("Branch 1");
-                        return Err(TypeError::UnresolvedIdentifier(name));
-                    }
+                    Some(LanguageType::Circuit) => Ok(()),
+                    Some(l) => Err(TypeError::Expected("circuit", l.label())),
+                    None => Err(TypeError::UnresolvedIdentifier(name))
                 }
             }
         }
@@ -113,24 +108,23 @@ impl TypeChecker {
 
 
     fn ensure_oracle_decl(&mut self, oracle: &ast::OracleDecl) -> Result<(), TypeError> {
-        // fetch the attached function name in the environment, and ensure that its a function
-        let loaded: &LanguageType = match self.identifier_types.get(&oracle.loads) {
-            Some(f) => f,
-            None => {
-                println!("Branch 2");
-                return Err(TypeError::UnresolvedIdentifier(oracle.loads.to_string()));
-            }
-        };
+        // ensure that `lifted` exists
+        let lifted: String = oracle.loads.to_string();
+        let loaded: Option<&LanguageType> = self.identifier_types.get(&lifted);
+        if loaded.is_none() {
+            return Err(TypeError::UnresolvedIdentifier(lifted));
+        }
+        // ensure that `lifted` is a function type
+        let loaded: &LanguageType = loaded.unwrap();
         let f_type: &FunctionType = match loaded {
             LanguageType::Function(f) => f,
-            _ => {
-                println!("Branch 3");
-                return Err(TypeError::UnresolvedIdentifier(loaded.label()));
-            }
+            _ => {return Err(TypeError::UnresolvedIdentifier(loaded.label())); }
         };
 
+        // sanitise oracle, and push to environment
         let sanitised_oracle: LanguageType = self.sanitise_oracle(oracle, f_type)?;
-        self.identifier_types.insert(oracle.name.to_string(), sanitised_oracle);
+        let oracle_name: String = oracle.name.to_string();
+        self.identifier_types.insert(oracle_name, sanitised_oracle);
         return Ok(());
     }
 
@@ -210,10 +204,8 @@ impl TypeChecker {
         let name: String = gate_name.to_string();
         return match Gate::from_string(gate_name, m_arity).map(|g| g.arity()) {
             Some(n) => Ok(n),
-            None => {
-                println!("Branch 4");
-                return Err(TypeError::UnresolvedIdentifier(name));
-            }
+            None => return Err(TypeError::UnresolvedIdentifier(name))
+
         };
     }
 
@@ -288,7 +280,6 @@ fn count_qubits(
         let size = match env.get(&arg.name) {
             Some(val) => val,
             None => {
-                println!("Branch 5, {:?}", env);
                 let name = arg.name.to_string();
                 return Err(TypeError::UnresolvedIdentifier(name))
             }

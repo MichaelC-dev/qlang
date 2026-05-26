@@ -1,5 +1,5 @@
 const CSIZE = 4;
-bits secret = 0b1101;
+bits secret = 0b0110;
 
 function f(x: bits[CSIZE]) -> bits[1] {
     x * secret
