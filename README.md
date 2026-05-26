@@ -38,7 +38,7 @@ Although the project is yet to be fully realised, the current implementation is 
 # `s` in O(1) queries.                          #
 
 const CSIZE = 4;
-bits secret = 0b1101;
+bits secret = 0b0110;
 
 # dot-products modulo 2 #
 function f(x: bits[CSIZE]) -> bits[1] {
