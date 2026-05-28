@@ -53,7 +53,9 @@ impl TypeChecker {
                     self.identifier_types.insert(var_name.clone(), var_value);
                     return Ok(());
                 },
-                _ => { return Err(TypeError::Expected("const", var_value.label()));}
+                _ => {
+                    return Err( TypeError::Expected("const", var_value.label()) );
+                }
             }
         }
         
@@ -63,7 +65,9 @@ impl TypeChecker {
                 self.identifier_types.insert(var_name.clone(), var_value);
                 return Ok(());
             },
-            _ => { return Err(TypeError::Expected("bits", var_value.label()));}
+            _ => {
+                return Err( TypeError::Expected("bits", var_value.label()) );
+            }
         };
     }
 
