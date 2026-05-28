@@ -20,7 +20,7 @@ impl Interpreter {
 
         let mut parser: Parser = Parser::new(lexer.tokens);
         let result = parser.parse();
-        if let Err(e) = result { panic!("Parsing Error: {}", e); }
+        if let Err(e) = &result { parser.show_error(e); }
         let mut result = result.unwrap();
 
         let mut tc: TypeChecker = TypeChecker::new();

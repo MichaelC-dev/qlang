@@ -53,4 +53,8 @@ impl Token {
     pub fn new(token_type: TokenType, lexeme: String, line: usize, col: usize) -> Self {
         Self { token_type, lexeme, line, col }
     }
+
+    pub fn line(&self) -> usize { self.line }
+
+    pub fn col(&self) -> usize { self.col }
 }

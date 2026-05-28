@@ -143,6 +143,10 @@ impl Parser {
         let name: String =self.expect(TokenType::Identifier)?;
         self.expect(TokenType::Equals)?;
         let value: ast::Expr = self.parse_expr()?;
+        match &value { // filter bitstrings only
+            &ast::Expr::BitsLiteral(_) => { },
+            _ => return Err(ParserError::UnexpectedToken(self.curr_lexeme()))        
+        }
 
         let assignment: ast::Assignment = ast::Assignment { name, value };
         self.expect(TokenType::Semicolon)?;
@@ -155,6 +159,10 @@ impl Parser {
         let const_name: String = self.expect(TokenType::Identifier)?;
         self.expect(TokenType::Equals)?;
         let value: ast::Expr = self.parse_expr()?;
+        match &value { // filter consts only
+            &ast::Expr::Const(_) => { },
+            _ => return Err(ParserError::UnexpectedToken(self.curr_lexeme()))        
+        }
         self.expect(TokenType::Semicolon)?;
 
         let assignment: ast::Assignment = ast::Assignment {
@@ -216,5 +224,15 @@ impl Parser {
             program.push(result);
         }
         Ok(program)
+    }
+
+    pub fn show_error(&self, err: &ParserError) {
+        let token_info: String = match self.peek(0) {
+            Some(t) => 
+                format!("'{}' (line {}, col {})", t.lexeme, t.line(), t.col()),
+            None => String::from("EOF")
+        };
+        let msg: String = format!("Error at {}: {}", token_info, err);
+        panic!("{}", msg);
     }
 }
