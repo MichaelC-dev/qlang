@@ -92,11 +92,10 @@ Architectural improvements include:
 - Refactoring evaluation architecture → The language's evaluation of circuits can be tightened.
 - Updating unitary oracles → oracles are currently constrained, in that they must be applied to an entire `QubitRegister`'s domain.
 - Implementing an automated and extensible testing suite (that is compatible with `cargo test`).
-- Improving Error messaging.
+- Improving error messaging & diagnosis.
 
 Planned features include:
-- Implementing the `SWAP`, `CZ`, `CSWAP` and Toffoli (`CCNOT`) gates.
-- Implementing a `printCircuit` mechanism for pretty-printing circuit diagrams.
+- Implementing a `printCircuit` method for pretty-printing circuit diagrams.
 
 
 ## Notes:
