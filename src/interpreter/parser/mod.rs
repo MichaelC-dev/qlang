@@ -143,13 +143,12 @@ impl Parser {
         let name: String =self.expect(TokenType::Identifier)?;
         self.expect(TokenType::Equals)?;
         let value: ast::Expr = self.parse_expr()?;
-        match &value { // filter bitstrings only
-            &ast::Expr::BitsLiteral(_) => { },
-            _ => return Err(ParserError::UnexpectedToken(self.curr_lexeme()))        
-        }
-
-        let assignment: ast::Assignment = ast::Assignment { name, value };
         self.expect(TokenType::Semicolon)?;
+        let assignment: ast::Assignment = ast::Assignment {
+            name,
+            value,
+            is_const: false
+        };
         return Ok(assignment);
     }
 
@@ -167,7 +166,8 @@ impl Parser {
 
         let assignment: ast::Assignment = ast::Assignment {
             name: const_name,
-            value: value
+            value: value,
+            is_const: true
         };
         return Ok(assignment)
     }

@@ -16,6 +16,7 @@ pub type Program = Vec<Statement>;
 pub struct Assignment {
     pub name: String, // Identifier
     pub value: Expr,  // can be BitsLiteral or Const
+    pub is_const: bool
 }
 
 

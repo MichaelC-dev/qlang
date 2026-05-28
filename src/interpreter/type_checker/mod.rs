@@ -43,15 +43,28 @@ impl TypeChecker {
 
 
     fn ensure_assignment(&mut self, assignment: &ast::Assignment) -> Result<(), TypeError> {
-        let bitstring_name: &String = &assignment.name;
-        let bitstring_value: LanguageType = self.resolve_expr(&assignment.value)?;
-        match bitstring_value {
-            LanguageType::Bits(_) | LanguageType::Const(_) => {
-                self.identifier_types.insert(bitstring_name.clone(), bitstring_value);
+        let var_name: &String = &assignment.name;
+        let var_value: LanguageType = self.resolve_expr(&assignment.value)?;
+
+        // case where const
+        if assignment.is_const {
+            match var_value {
+                LanguageType::Const(_) => {
+                    self.identifier_types.insert(var_name.clone(), var_value);
+                    return Ok(());
+                },
+                _ => { return Err(TypeError::Expected("const", var_value.label()));}
+            }
+        }
+        
+        // case where bitstring
+        match var_value {
+            LanguageType::Bits(_) => {
+                self.identifier_types.insert(var_name.clone(), var_value);
+                return Ok(());
             },
-            _ => { return Err(TypeError::Expected("bits/ const", bitstring_value.label())); }
+            _ => { return Err(TypeError::Expected("bits", var_value.label()));}
         };
-        return  Ok(());
     }
 
 
