@@ -22,11 +22,11 @@ impl Evaluator {
     /// the respective variable into `self.environment`.
     fn eval_assignment(&mut self, assign: &ast::Assignment) -> Result<(), RuntimeError> {
         let var_name: String = assign.name.clone();
-        let result: EvaluatorType = self.eval_expr(&assign.value)?;
 
         // filter out non-bits, non-const values
-        let result: EvaluatorType = match result {
-            EvaluatorType::Bits(_) | EvaluatorType::Const(_) => result,
+        let result: EvaluatorType = match self.eval_expr(&assign.value)? {
+            bits @ EvaluatorType::Bits(_) => bits,
+            num @ EvaluatorType::Const(_) => num,
             _ => { return Err(RuntimeError::TypeMismatch); }
         };
         self.environment.working_env.insert(var_name, result);

@@ -9,6 +9,19 @@ pub enum Statement {
 }
 pub type Program = Vec<Statement>;
 
+impl Statement {
+    pub fn _kind(&self) -> String {
+        match self {
+            Statement::Assignment(_) => String::from("Assignment"),
+            Statement::Function(_) => String::from("Function"),
+            Statement::Oracle(_) => String::from("Oracle"),
+            Statement::Circuit(_) => String::from("Circuit"),
+            Statement::MethodCall(_) => String::from("Method"),
+            Statement::Expr(_) => String::from("Expression")
+        }
+    }
+}
+
 
 
 // ----- BISTRING ASSIGNMENT -----

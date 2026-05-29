@@ -85,7 +85,7 @@ impl Evaluator {
                 let call_args: Vec<EvaluatorType> = call_args?;
 
                 // ensure that func_name points to an actual function
-                let func_name = match &**callee { // ?
+                let func_name = match &**callee {
                     ast::Expr::Identifier(f) => f.clone(),
                     _ => { return Err(RuntimeError::TypeMismatch); }
                 };

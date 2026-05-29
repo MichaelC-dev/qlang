@@ -17,6 +17,7 @@ use std::sync::Arc;
 type CircuitLookup = Vec<(String, usize)>; // (identifier, number_of_qubits)
 
 impl Evaluator {
+    // TODO - REWRITE
     pub fn eval_circuit_decl(&mut self, decl: &ast::CircuitDecl) -> Result<(), RuntimeError> {
         let mut register_str: String = String::new();
         let mut lookup: CircuitLookup = Vec::new();
@@ -42,20 +43,20 @@ impl Evaluator {
         for instruction in decl.instructions.iter() {
             let mut tgts: Vec<usize> = Vec::new(); 
             for arg in &instruction.args {
-                let arg_name = arg.name.clone();
                 match arg.applies {
                     ast::Applies::One(n) => {
-                        let idx: usize = get_index(&lookup, &arg_name, n)?;
+                        let idx: usize = get_index(&lookup, &arg.name, n)?;
                         tgts.push(idx);
                     }
                     ast::Applies::All => {
-                        let idx: usize = get_index(&lookup, &arg_name, 0)?;
+                        let idx: usize = get_index(&lookup, &arg.name, 0)?;
                         let length: Option<usize> = lookup.iter()
-                            .find(|(a, _)| &arg_name == a)
+                            .find(|(a, _)| &arg.name == a)
                             .map(|(_, n)| *n);
                         let length: usize = match length {
                             Some(n) => n,
-                            None => { return Err(RuntimeError::Fatal); } // this should be unreachable, in theory
+                            // unreacahable
+                            None => { return Err(RuntimeError::Fatal); }
                         };
                         for i in 0..length { tgts.push(idx + i); }
                     }

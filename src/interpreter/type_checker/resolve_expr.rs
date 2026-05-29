@@ -76,10 +76,11 @@ impl TypeChecker {
                 // flatten `args` to LanguageType::Bits(n), and flatten again to n
                 let mut resolved_args: Vec<usize> = Vec::new();
                 for arg in args {
-                    let result = self.resolve_expr(&arg)?;
-                    let n: usize = match result {
+                    let n: usize = match self.resolve_expr(&arg)? {
                         LanguageType::Bits(n) => n,
-                        _ => { return Err(TypeError::Expected("bits", result.label())); }
+                        lt => {
+                            return Err(TypeError::Expected("bits", lt.label())); 
+                        }
                     };
                     resolved_args.push(n);
                 }
