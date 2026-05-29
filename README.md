@@ -11,8 +11,9 @@ The language currently supports:
 - Circuit construction (with up to 16 qubits), execution, and measurement.
 
 Circuits are also capable of utilising the following gates:
-- Unary Operators: Hadamard (`H`), The Pauli Operators (`X`, `Y`, and `Z`), and Phase Operators (`S`, `T`).
-- Binary Operators: Controlled Not (`CNOT`).
+- Unary Operators: Hadamard (`H`), the Pauli Operators (`X`, `Y`, and `Z`), and Phase operators (`S`, `T`).
+- Binary Operators: Controlled Not (`CNOT`), `CZ`, and the `SWAP` operators.
+- Ternary Operators: `CSWAP` and the Toffoli (`CCNOT`) operators.
 
 Although the project is yet to be fully realised, the current implementation is capable of executing:
 - [Deutsch's Algorithm](https://quantum.cloud.ibm.com/learning/en/courses/fundamentals-of-quantum-algorithms/quantum-query-algorithms/deutsch-algorithm).
