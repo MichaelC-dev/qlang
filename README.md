@@ -84,6 +84,8 @@ SHOT 2 OF 3: Got measurement [0, 1, 1, 0]
 SHOT 3 OF 3: Got measurement [0, 1, 1, 0]
 ```
 
+Where `Bx` and `By` denote the oracle operator `U_f`.
+
 ## Usage:
 Building is as simple as executing:
 ```
