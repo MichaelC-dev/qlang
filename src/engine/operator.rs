@@ -46,6 +46,15 @@ impl Operator {
     }
 }
 
+/* ----- PROJECTORS ----- */
+impl Operator {
+    pub fn gate(&self) -> &Gate {
+        return &self.gate_kind;
+    }
+
+    pub fn applies(&self) -> &Vec<usize> { return &self.targets; }
+}
+
 
 /* ----- API CALLABLE METHODS ----- */
 impl Operator {

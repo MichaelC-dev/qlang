@@ -1,5 +1,5 @@
-const CSIZE = 4;
-bits secret = 0b0110;
+const CSIZE = 5;
+bits secret = 0b01101;
 
 function f(x: bits[CSIZE]) -> bits[1] {
     x * secret
@@ -18,5 +18,6 @@ circuit bernstein_vazirani {
         measure(x);
 }
 
+bernstein_vazirani.printCircuit(spaces=2);
 const SHOTS = 5;
 bernstein_vazirani.measure(shots=SHOTS);

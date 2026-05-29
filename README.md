@@ -9,6 +9,7 @@ The language currently supports:
 - Bitstring assignment and classical function definitions.
 - Unitary oracles determined by a classical function.
 - Circuit construction (with up to 16 qubits), execution, and measurement.
+- Simple circuit printing to stdout , using the `circuit.printCircuit();` routine.
 
 Circuits are also capable of utilising the following gates:
 - Unary Operators: Hadamard (`H`), the Pauli Operators (`X`, `Y`, and `Z`), and Phase operators (`S`, `T`).
@@ -59,14 +60,28 @@ circuit bernstein_vazirani {
         measure(x);
 }
 
+bernstein_vazirani.printCircuit(spaces=1);
 const SHOTS = 3;
 bernstein_vazirani.measure(shots=SHOTS);
+```
 
-# PRINTS TO STDOUT: #
-# Measuring circuit 'bernstein_vazirani' 3 time/s. #
-# SHOT 1 OF 3: Got measurement [0, 1, 1, 0]        #
-# SHOT 2 OF 3: Got measurement [0, 1, 1, 0]        #
-# SHOT 3 OF 3: Got measurement [0, 1, 1, 0]        #
+The above program will print to stdout:
+```
+Circuit 'bernstein_vazirani': 
+|0> H-----------Bx-H-----------M--
+
+|0> ---H--------Bx----H--------M--
+
+|0> ------H-----Bx-------H-----M--
+
+|0> ---------H--Bx----------H--M--
+
+|-> ------------By----------------
+
+Measuring circuit 'bernstein_vazirani' 3 time/s.
+SHOT 1 OF 3: Got measurement [0, 1, 1, 0]
+SHOT 2 OF 3: Got measurement [0, 1, 1, 0]
+SHOT 3 OF 3: Got measurement [0, 1, 1, 0]
 ```
 
 ## Usage:
@@ -94,10 +109,6 @@ Architectural improvements include:
 - Updating unitary oracles → oracles are currently constrained, in that they must be applied to an entire `QubitRegister`'s domain.
 - Implementing an automated and extensible testing suite (that is compatible with `cargo test`).
 - Improving error messaging & diagnosis.
-
-Planned features include:
-- Implementing a `printCircuit` method for pretty-printing circuit diagrams.
-
 
 ## Notes:
 This project was created as a learning exercise in programming language construction, and quantum computing. Although `qlang` is capable of correctly evaluating small circuits, It should not be considered as a substitute for more mature languages, libraries, or frameworks.

@@ -1,5 +1,5 @@
-const SIZE = 4;
-bits s = 0b1101;
+const SIZE = 5;
+bits s = 0b11011;
 
 function f_balanced(x: bits[SIZE]) -> bits[1] { x * s }
 function f_constant(x: bits[SIZE]) -> bits[1] { 0b1 }
@@ -19,4 +19,5 @@ circuit deutsch_jozsa {
         measure(x);
 }
 
+deutsch_jozsa.printCircuit();
 deutsch_jozsa.measure(shots=3);

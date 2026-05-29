@@ -34,7 +34,13 @@ impl Evaluator {
                 println!("");
             },
 
-            "printCircuit" => todo!(),
+            // 2 spaces means we suffix each gate with two dashes
+            "printCircuit" => {
+                let spaces: usize = self.get_arg(&call.args, "spaces")?
+                    .unwrap_or(1);
+                println!("Circuit '{}': ", circuit_name);
+                c.print_circuit(spaces)?;
+            }
 
             _ => {
                 let name: String = call.call.to_string();
