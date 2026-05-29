@@ -39,7 +39,6 @@ pub enum TokenType {
     EOF
 }
 
-#[allow(dead_code)] // line and col are used for error logging
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
