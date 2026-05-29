@@ -3,7 +3,6 @@ mod eval_expr;
 mod eval_circuit;
 mod eval_method;
 mod environment;
-mod print_circuit;
 
 use std::collections::HashMap;
 use crate::interpreter::evaluator::runtime_error::RuntimeError;

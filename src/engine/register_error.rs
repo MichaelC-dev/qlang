@@ -9,7 +9,8 @@ pub enum RegisterError {
     OutOfRange(usize, usize),
     CompositionFailed(String),
     BlackBoxMisalign,
-    RunTimeFailure(Option<String>)
+    RunTimeFailure(Option<String>),
+    RenderFailed
 }
 
 impl fmt::Display for RegisterError {
@@ -42,6 +43,10 @@ impl fmt::Display for RegisterError {
                     Some(s) => { write!(f, "Unexpected failure at runtime: {}", s) },
                     None => {  write!(f, "Unexpected failure at runtime") }
                 }
+            },
+
+            Self::RenderFailed => {
+                write!(f, "Failed to render circuit.")
             }
         }
     }

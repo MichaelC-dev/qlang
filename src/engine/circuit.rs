@@ -1,10 +1,47 @@
-use qlang::engine::{gate::Gate, operator::Operator};
 use std::collections::HashMap;
-use crate::interpreter::evaluator::environment::Circuit;
-use crate::interpreter::evaluator::RuntimeError;
+use crate::engine::gate::Gate;
+use crate::engine::qubit_register::QubitRegister;
+use crate::engine::operator::Operator;
+use crate::engine::register_error::RegisterError;
+
+
+// ----- CONSTRUCTORS -----
+#[derive(Debug, Clone)]
+pub struct Circuit {
+    init: String,
+    ops: Vec<Operator>    
+}
 
 impl Circuit {
-    pub fn print_circuit(&self, spaces: usize) -> Result<(), RuntimeError> {
+    pub fn new(init: String, ops: Vec<Operator>) -> Self {
+        Self { init, ops }
+    }
+}
+
+
+// ----- API CALLABLE METHODS
+impl Circuit {
+    /// executes the circuit implemented by `self`. A return value
+    /// of `Ok(v)` implies safe execution, and `v` stores the last measurement
+    /// captured in the system. If `v` is empty, it means that the circuit did not
+    /// end with a measurement.
+    /// 
+    /// enabling `verbose` will print the final distribution to `stdout`.
+    pub fn execute(&self, verbose: bool) -> Result<Vec<usize>, RegisterError> {
+        let mut register: QubitRegister = QubitRegister::from_pattern(&self.init)?;
+        let mut measurement: Vec<usize> = Vec::new();
+        for op in &self.ops {
+            measurement = register.apply(op)?;
+        }
+        if verbose {
+            println!("Yielded distribution of {}", register.to_string());
+        }
+        Ok(measurement)
+    }
+}
+
+impl Circuit {
+    pub fn print_circuit(&self, spaces: usize) -> Result<(), RegisterError> {
         let mut wires: Vec<String> = Vec::new();
         for c in self.init.chars().into_iter() {
             wires.push(format!("|{}> ", c));
@@ -38,13 +75,14 @@ impl Circuit {
 }
 
 
+// ----- HELPERS -----
 /// Given an operator, return a HashMap that demonstrates how an
 /// instruction is to be rendered. For example, given a CNOT occuring at
 /// `vec![0, 2]`, return `{0: "*", 2: "X"}`
 fn symbols_from_op(
     op: &Operator,
     circuit_size: usize
-) -> Result<HashMap<usize, String>, RuntimeError> {
+) -> Result<HashMap<usize, String>, RegisterError> {
     let mut table: HashMap<usize, String> = HashMap::new();
 
     // produce symbols
@@ -82,12 +120,13 @@ fn symbols_from_op(
 
     // bind symbols to indices
     if op.applies().len() != symbols.len() {
-        return Err(RuntimeError::Fatal); // todo
+        return Err(RegisterError::RenderFailed);
     }
+
     let mut i: usize = 0;
     for idx in op.applies().iter() {
         if *idx >= circuit_size {
-            return Err(RuntimeError::Fatal); // todo
+            return Err(RegisterError::RenderFailed);
         }
         table.insert(*idx, symbols[i].to_string());
         i += 1;

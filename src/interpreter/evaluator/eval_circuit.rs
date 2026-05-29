@@ -84,7 +84,7 @@ impl Evaluator {
         }
 
         let cirucit_name: String = decl.name.clone();
-        let circuit: Circuit = Circuit { init: register_str, ops };
+        let circuit: Circuit = Circuit::new(register_str, ops);
 
         self.environment.working_env.insert(cirucit_name, EvaluatorType::Circuit(circuit));
 

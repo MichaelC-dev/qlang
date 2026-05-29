@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use qlang::engine::{operator::Operator, qubit_register::QubitRegister};
+use qlang::engine::circuit;
+use qlang::engine::operator::Operator;
 use crate::interpreter::parser::ast_types as ast;
-use crate::interpreter::evaluator::runtime_error::RuntimeError;
 
 #[derive(Clone)]
 pub enum EvaluatorType {
@@ -60,26 +60,11 @@ pub struct Oracle {
 // ----- CIRCUIT DEFINITION -----
 #[derive(Debug, Clone)]
 pub struct Circuit {
-    pub init: String,
-    pub ops: Vec<Operator>
+    pub circuit: circuit::Circuit
 }
 
 impl Circuit {
-    /// executes the circuit implemented by `self`. A return value
-    /// of `Ok(v)` implies safe execution, and `v` stores the last measurement
-    /// captured in the system. If `v` is empty, it means that the circuit did not
-    /// end with a measurement.
-    /// 
-    /// enabling `verbose` will print the final distribution to `stdout`.
-    pub fn execute(&self, verbose: bool) -> Result<Vec<usize>, RuntimeError> {
-        let mut register: QubitRegister = QubitRegister::from_pattern(&self.init)?;
-        let mut measurement: Vec<usize> = Vec::new();
-        for op in &self.ops {
-            measurement = register.apply(op)?;
-        }
-        if verbose {
-            println!("Yielded distribution of {}", register.to_string());
-        }
-        Ok(measurement)
+    pub fn new(init: String, ops: Vec<Operator>) -> Self {
+        Self { circuit: circuit::Circuit::new(init, ops) }
     }
 }

@@ -18,7 +18,7 @@ impl Evaluator {
                 println!("Executing circuit '{}' {} time/s.", circuit_name, shots);
                 for i in 0..shots {
                     print!("SHOT {} OF {}: ", i+1, shots);
-                    c.execute(true)?;
+                    c.circuit.execute(true)?;
                 }
                 println!("");
             },
@@ -28,7 +28,7 @@ impl Evaluator {
                 println!("Measuring circuit '{}' {} time/s.", circuit_name, shots);
                 for i in 0..shots {
                     print!("SHOT {} OF {}: ", i+1, shots);
-                    let result: Vec<usize> = c.execute(false)?;
+                    let result: Vec<usize> = c.circuit.execute(false)?;
                     println!("Got measurement {:?}", result);
                 }
                 println!("");
@@ -39,7 +39,7 @@ impl Evaluator {
                 let spaces: usize = self.get_arg(&call.args, "spaces")?
                     .unwrap_or(1);
                 println!("Circuit '{}': ", circuit_name);
-                c.print_circuit(spaces)?;
+                c.circuit.print_circuit(spaces)?;
             }
 
             _ => {

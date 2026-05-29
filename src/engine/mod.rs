@@ -6,6 +6,7 @@ pub mod register_error;
 pub mod gate;
 pub mod qubit_register;
 pub mod operator;
+pub mod circuit;
 
 // exports:
 // use qlang::engine::register_error::RegisterError;
