@@ -1,14 +1,12 @@
 use qlang::engine::black_box::{BlackBox, Lambda};
 use qlang::engine::gate::Gate;
 use qlang::engine::operator::Operator;
-use qlang::engine::register_error::RegisterError;
 
 use crate::interpreter::evaluator::Evaluator;
-use crate::interpreter::evaluator::environment::{Circuit, EvaluatorType, Environment, Bits};
+use crate::interpreter::evaluator::environment::{Circuit, EvaluatorType};
 use crate::interpreter::evaluator::runtime_error::RuntimeError;
 use crate::interpreter::parser::ast_types as ast;
-use std::collections::HashMap;
-use std::sync::Arc;
+
 
 // Although there is a case to use a HashMap over a Vec here,
 // Vec's make it easy to preserve the ordering of variables. The
@@ -19,24 +17,7 @@ type CircuitLookup = Vec<(String, usize)>; // (identifier, number_of_qubits)
 impl Evaluator {
     // TODO - REWRITE
     pub fn eval_circuit_decl(&mut self, decl: &ast::CircuitDecl) -> Result<(), RuntimeError> {
-        let mut register_str: String = String::new();
-        let mut lookup: CircuitLookup = Vec::new();
-
-        // Builds the entire register to be fed into the engine's QubitRegister,
-        // along with the means to index into the register.
-        //
-        // For example, given the assignments `x := 00, y := ++`,
-        // we would want to construct the register "00++" (we assume order);
-        // but we also want to know that `x` begins at qubit 0, and `y` begins at 2.
-        for reg in decl.registers.iter() {
-            let m: usize = match &reg.multiplies {
-                Some(n) => self.expect_const(&n)?,
-                None => 1
-            };
-            let inits: String = reg.init.repeat(m);
-            register_str += &inits;
-            lookup.push((reg.name.clone(), inits.len()));
-        }
+        let (register_str, lookup) = self.construct_lookup(decl)?;
 
         // build engine ops
         let mut ops: Vec<Operator> = Vec::new();
@@ -55,7 +36,7 @@ impl Evaluator {
                             .map(|(_, n)| *n);
                         let length: usize = match length {
                             Some(n) => n,
-                            // unreacahable
+                            // unreacahable, as `idx` had been reached.
                             None => { return Err(RuntimeError::Fatal); }
                         };
                         for i in 0..length { tgts.push(idx + i); }
@@ -100,6 +81,7 @@ impl Evaluator {
             Some(EvaluatorType::Oracle(o)) => {
                 let (x, y): (usize, usize) = (o.input.0, o.input.1);
                 let lambda: Lambda = self.function_to_lambda(&o.loads.func, &o.loads.input, &[x]);
+                // let _: Option<Operator> = Operator::new_u_f(lambda, x, y);
                 let bb: BlackBox = BlackBox::new(lambda, x, y);
                 return Ok(Gate::BlackBox(bb));
             },
@@ -116,6 +98,36 @@ impl Evaluator {
 
 
 // ----- HELPERS -----
+
+///
+impl Evaluator {
+    fn construct_lookup(
+        &mut self,
+        decl: &ast::CircuitDecl
+    ) -> Result<(String, CircuitLookup), RuntimeError> {
+        let mut register_str: String = String::new();
+        let mut lookup: CircuitLookup = Vec::new();
+
+        // Builds the entire register to be fed into the engine's QubitRegister,
+        // along with the means to index into the register.
+        //
+        // For example, given the assignments `x := 00, y := ++`,
+        // we would want to construct the register "00++" (we assume order);
+        // but we also want to know that `x` begins at qubit 0, and `y` begins at 2.
+        for reg in decl.registers.iter() {
+            let m: usize = match &reg.multiplies {
+                Some(n) => self.expect_const(&n)?,
+                None => 1
+            };
+            let inits: String = reg.init.repeat(m);
+            register_str += &inits;
+            lookup.push((reg.name.clone(), inits.len()));
+        }
+
+        return Ok((register_str, lookup));
+    }
+}
+
 
 /// given a `table` of identifiers, an identifier, and a (zero-indexed) 
 /// pivot, return the index of `identifer[plus]`  in the circuits 
@@ -139,52 +151,4 @@ fn get_index(table: &CircuitLookup, identifer: &String, plus: usize) -> Result<u
         }
     }
     return Err(RuntimeError::VarNotFound(identifer.clone()));
-}
-
-
-impl Evaluator {
-    fn function_to_lambda(
-        &self,
-        func: &ast::Expr,
-        params: &[String],
-        param_bit_lengths: &[usize]
-    ) -> Lambda {
-        let func = func.clone();
-        let params: Vec<String> = params.to_vec();
-        let param_bit_lengths: Vec<usize> = param_bit_lengths.to_vec();
-        let parent_env: Environment = self.environment.clone();
-
-        Arc::new(move |args: Vec<usize>| -> Result<usize, RegisterError> {
-            if args.len() != params.len() {
-                return Err(RegisterError::RunTimeFailure(Some(format!(
-                    "expected {} arguments, got {}",
-                    params.len(),
-                    args.len()
-                ))));
-            }
-
-            let mut lambda_env: Environment = Environment {
-                working_env: HashMap::new(),
-                parent: Some(Box::new(parent_env.clone()))
-            };
-
-            for i in 0..params.len() {
-                let bits: Bits = Bits {
-                    literal: args[i],
-                    length: param_bit_lengths[i]
-                };
-                lambda_env.working_env.insert(params[i].clone(), EvaluatorType::Bits(bits));
-            }
-
-            let mut lambda_eval: Evaluator = Evaluator::new();
-            lambda_eval.environment = lambda_env;
-            match lambda_eval.eval_expr(&func) {
-                Ok(EvaluatorType::Bits(bits)) => Ok(bits.literal),
-                Ok(_) => Err(RegisterError::RunTimeFailure(Some(
-                    "function did not return a bits value".to_string()
-                ))),
-                Err(err) => Err(RegisterError::RunTimeFailure(Some(err.to_string())))
-            }
-        })
-    }
 }
