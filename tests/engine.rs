@@ -51,8 +51,6 @@ fn qubit_register_from_pattern_accepts_valid_pattern() {
     let pattern = "+-".to_string();
     let register = QubitRegister::from_pattern(&pattern).expect("create register from pattern");
     assert_eq!(register.get_n(), 2);
-    assert!(register.get_qubit(0).is_some());
-    assert!(register.get_qubit(1).is_some());
 }
 
 #[test]

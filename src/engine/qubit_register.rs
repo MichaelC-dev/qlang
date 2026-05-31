@@ -75,9 +75,6 @@ impl QubitRegister {
 /* ----- PROJECTIONS ----- */
 impl QubitRegister {
     pub fn get_n(&self) -> usize { return self.n; }
-    pub fn get_qubit(&self, i: usize) -> Option<&Complex64> {
-        return self.state.get(i);
-    }
 }
 
 
