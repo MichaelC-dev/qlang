@@ -120,6 +120,7 @@ fn symbols_from_op(
 
     // bind symbols to indices
     if op.applies().len() != symbols.len() {
+        println!("{} vs {}", op.applies().len(), symbols.len());
         return Err(RegisterError::RenderFailed);
     }
 

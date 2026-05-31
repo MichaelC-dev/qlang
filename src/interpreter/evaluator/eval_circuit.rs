@@ -1,4 +1,4 @@
-use qlang::engine::black_box::{BlackBox, Lambda};
+use qlang::engine::black_box::Lambda;
 use qlang::engine::gate::Gate;
 use qlang::engine::operator::Operator;
 
@@ -43,6 +43,17 @@ impl Evaluator {
                     }
                 }
             }
+
+            // if the gate exists in the environment as an oracle,
+            // then we don't need to determine how it is applied. 
+            if let Some(EvaluatorType::Oracle(o)) =  self.environment.working_env.get(&instruction.name) {
+                let (x, y): (usize, usize) = (o.input.0, o.input.1);
+                let lambda: Lambda = self.function_to_lambda(&o.loads.func, &o.loads.input, &[x]);
+                let op: Operator = Operator::new_u_f(lambda, x, y);
+                ops.push(op);
+                continue;
+            }
+
             let gate: Gate = self.resolve_gate(&instruction.name, tgts.len())?;
 
             // If Gate arity is 1, then we want to apply the gate point-wise
@@ -74,21 +85,6 @@ impl Evaluator {
 
 
     fn resolve_gate(&self, gate_name: &String, m_arity: usize) -> Result<Gate, RuntimeError> {
-        // check to see that the gate exists as an oracle in the environment
-        // - Note that this means that we're allowing users to override existing
-        // gates ("H", "CNOT", etc...) with their own oracles.
-        match self.environment.working_env.get(gate_name) {
-            Some(EvaluatorType::Oracle(o)) => {
-                let (x, y): (usize, usize) = (o.input.0, o.input.1);
-                let lambda: Lambda = self.function_to_lambda(&o.loads.func, &o.loads.input, &[x]);
-                // let _: Option<Operator> = Operator::new_u_f(lambda, x, y);
-                let bb: BlackBox = BlackBox::new(lambda, x, y);
-                return Ok(Gate::BlackBox(bb));
-            },
-            Some(_) => { return Err(RuntimeError::TypeMismatch); }
-            None => { } // check default gate set
-        };
-
         match Gate::from_string(gate_name, m_arity) {
             Some(g) => Ok(g),
             None => Err(RuntimeError::VarNotFound(gate_name.clone()))

@@ -36,13 +36,13 @@ impl Operator {
     /// `f :: {0,1}^n -> {0,1}^m`.
     /// 
     /// Pre: 1 <= m <= n
-    pub fn new_u_f(f: Lambda, n: usize, m: usize) -> Option<Self> {
+    pub fn new_u_f(f: Lambda, n: usize, m: usize) -> Self {
         let bb: BlackBox = BlackBox::new(f,n,m);
         let g: Gate = Gate::BlackBox(bb);
         
-        // `targets` is redundant for U_f, since it implicitly targets the entire input space
-        let op: Operator = Operator { gate_kind: g, targets: vec![] };
-        return Some(op);
+        // `targets` is, by definition, the entire domain of the circuit.
+        let op: Operator = Operator { gate_kind: g, targets: (0..(n+m)).collect() };
+        return op;
     }
 }
 
