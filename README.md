@@ -107,7 +107,6 @@ Or otherwise:
 The current release is functional, but still experimental, and several improvements and features have been planned before the language can be considered stable.
 
 Architectural improvements include:
-- Refactoring evaluation architecture → The language's evaluation of circuits can be tightened.
 - Updating unitary oracles → oracles are currently constrained, in that they must be applied to an entire `QubitRegister`'s domain.
 - Implementing an automated and extensible testing suite (that is compatible with `cargo test`).
 - Improving error messaging & diagnosis.
