@@ -15,7 +15,6 @@ use crate::interpreter::parser::ast_types as ast;
 type CircuitLookup = Vec<(String, usize)>; // (identifier, number_of_qubits)
 
 impl Evaluator {
-    // TODO - REWRITE
     pub fn eval_circuit_decl(&mut self, decl: &ast::CircuitDecl) -> Result<(), RuntimeError> {
         let (register_str, lookup) = self.construct_lookup(decl)?;
 
@@ -24,24 +23,10 @@ impl Evaluator {
         for instruction in decl.instructions.iter() {
             let mut tgts: Vec<usize> = Vec::new(); 
             for arg in &instruction.args {
-                match arg.applies {
-                    ast::Applies::One(n) => {
-                        let idx: usize = get_index(&lookup, &arg.name, n)?;
-                        tgts.push(idx);
-                    }
-                    ast::Applies::All => {
-                        let idx: usize = get_index(&lookup, &arg.name, 0)?;
-                        let length: Option<usize> = lookup.iter()
-                            .find(|(a, _)| &arg.name == a)
-                            .map(|(_, n)| *n);
-                        let length: usize = match length {
-                            Some(n) => n,
-                            // unreacahable, as `idx` had been reached.
-                            None => { return Err(RuntimeError::Fatal); }
-                        };
-                        for i in 0..length { tgts.push(idx + i); }
-                    }
-                }
+                // identify target qubits from each qubit arg
+                // being passed to a given gate.
+                let result: Vec<usize> = resolve_targets(arg, &lookup)?;
+                for r in result { tgts.push(r); }
             }
 
             // if the gate exists in the environment as an oracle,
@@ -75,28 +60,29 @@ impl Evaluator {
             }
         }
 
-        let cirucit_name: String = decl.name.clone();
+        let circuit_name: String = decl.name.clone();
         let circuit: Circuit = Circuit::new(register_str, ops);
 
-        self.environment.working_env.insert(cirucit_name, EvaluatorType::Circuit(circuit));
+        self.environment.working_env.insert(circuit_name, EvaluatorType::Circuit(circuit));
 
         return Ok(());
-    }
-
-
-    fn resolve_gate(&self, gate_name: &String, m_arity: usize) -> Result<Gate, RuntimeError> {
-        match Gate::from_string(gate_name, m_arity) {
-            Some(g) => Ok(g),
-            None => Err(RuntimeError::VarNotFound(gate_name.clone()))
-        }
     }
 }
 
 
 // ----- HELPERS -----
-
-///
 impl Evaluator {
+    fn resolve_gate(
+        &self, 
+        gate_name: &String,
+        m_arity: usize
+    ) -> Result<Gate, RuntimeError> {
+        match Gate::from_string(gate_name, m_arity) {
+            Some(g) => Ok(g),
+            None => Err(RuntimeError::VarNotFound(gate_name.clone()))
+        }
+    }
+
     fn construct_lookup(
         &mut self,
         decl: &ast::CircuitDecl
@@ -147,4 +133,34 @@ fn get_index(table: &CircuitLookup, identifer: &String, plus: usize) -> Result<u
         }
     }
     return Err(RuntimeError::VarNotFound(identifer.clone()));
+}
+
+/// Given a `CircuitRef`, identify the qubits
+/// that the reference is attempting to target.
+/// 
+/// This method uses a `CircuitLookup to assist`.
+/// For example, given the table `[("x", 3)]`, and
+/// a circuit reference `x[1]`, it should return `vec![1]`
+fn resolve_targets(
+    arg: &ast::CircuitRef,
+    lookup: &CircuitLookup
+) -> Result<Vec<usize>, RuntimeError> {
+    match arg.applies {
+        ast::Applies::One(n) => {
+            let idx: usize = get_index(lookup, &arg.name, n)?;
+            return Ok(vec![idx]);
+        }
+        ast::Applies::All => {
+            let idx: usize = get_index(&lookup, &arg.name, 0)?;
+            let length: Option<usize> = lookup.iter()
+                .find(|(a, _)| &arg.name == a)
+                .map(|(_, n)| *n);
+            let length: usize = match length {
+                Some(n) => n,
+                // unreacahable, as `idx` had been reached.
+                None => { return Err(RuntimeError::Fatal); }
+            };
+            return Ok((idx..length+idx).collect());
+        }
+    }
 }
