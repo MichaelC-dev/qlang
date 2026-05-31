@@ -129,5 +129,6 @@ fn deutsch_f_not_oracle_composition() {
     
     let circuit: Circuit = Circuit::new(pattern, ops);
     let result: Vec<usize> = circuit.execute(false).expect("run circuit");
+    // balanced functions always measure `1`.
     assert_eq!(result, vec![1]);
 }

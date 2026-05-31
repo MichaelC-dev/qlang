@@ -28,7 +28,7 @@ Although the project is yet to be fully realised, the current implementation is 
 - a lexer for tokenisation,
 - a recursive-descent parser for AST construction,
 - a static type-checker for ensuring programming correctness,
-- an evaluator/runtime for semantic execution,
+- a runtime for semantic execution,
 - and a quantum register engine for state evolution and measurement.
 
 
@@ -102,13 +102,17 @@ Or otherwise:
 ./path_to_binary/qlang.exe [file]
 ```
 
+unit tests on the engine can be conducted using:
+```
+cargo test
+```
+
 
 ## Future Work:
 The current release is functional, but still experimental, and several improvements and features have been planned before the language can be considered stable.
 
 Architectural improvements include:
 - Updating unitary oracles → oracles are currently constrained, in that they must be applied to an entire `QubitRegister`'s domain.
-- Implementing an automated and extensible testing suite (that is compatible with `cargo test`).
 - Improving error messaging & diagnosis.
 
 ## Notes:
